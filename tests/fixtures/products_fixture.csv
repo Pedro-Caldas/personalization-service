@@ -1,0 +1,7 @@
+product_id,category,price,avg_rating,popularity_score
+p_a,eletronicos,100.0,4.5,0.9
+p_b,eletronicos,200.0,3.0,0.2
+p_c,livros,50.0,4.0,0.5
+p_d,livros,80.0,3.5,0.3
+p_e,moda,120.0,4.8,0.7
+p_f,esporte,60.0,2.5,0.1
