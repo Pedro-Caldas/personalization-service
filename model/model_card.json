@@ -1,0 +1,27 @@
+{
+  "model_name": "purchase_propensity_v1",
+  "model_type": "sklearn.linear_model.LogisticRegression",
+  "version": "1.0.0",
+  "input_features": [
+    "interactions",
+    "price",
+    "avg_rating",
+    "popularity_score",
+    "user_affinity_match"
+  ],
+  "feature_descriptions": {
+    "interactions": "numero de interacoes do usuario com o produto (histórico)",
+    "price": "preco do produto (products.csv)",
+    "avg_rating": "avaliacao media do produto (products.csv)",
+    "popularity_score": "score de popularidade global do produto, 0-1 (products.csv)",
+    "user_affinity_match": "1 se a categoria do produto bate com a categoria de maior afinidade historica do usuario, senao 0. Esta feature NAO vem pronta em nenhum CSV -- precisa ser derivada de events.csv + products.csv."
+  },
+  "user_affinity_match_derivation": {
+    "definicao_referencia": "Para cada usuario, a 'categoria de maior afinidade' e a categoria de produto com maior numero de interacoes (todas as linhas de events.csv daquele usuario, join com products.csv por product_id, contando ocorrencias por categoria). Em caso de empate, qualquer criterio de desempate razoavel e aceitavel, desde que documentado.",
+    "exemplo_pseudocodigo": "eventos_do_usuario -> join products (por product_id) -> group by category -> contar -> pegar categoria com maior contagem",
+    "nota": "Esta e a definicao de referencia usada para gerar os dados de treino. Pequenas variacoes de criterio (ex: considerar so purchases, ponderar por recencia) sao aceitaveis e fazem parte do que avaliamos -- documente a escolha feita no SOLUTION.md."
+  },
+  "output": "probabilidade de compra (score entre 0 e 1), usado para ranquear produtos",
+  "notes": "Modelo treinado offline sobre um snapshot de eventos. Nao deve ser retreinado como parte deste case; o foco eh servir esse modelo em producao.",
+  "cold_start": "Usuarios sem historico de interacoes nao terao 'interactions' nem 'user_affinity_match' calculaveis a partir do dado principal -- tratar esse caso eh parte do desafio."
+}

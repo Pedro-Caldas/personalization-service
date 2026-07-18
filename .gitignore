@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+
+# Generated batch artifact (produced by scripts/prepare_features.py — not versioned)
+artifacts/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
