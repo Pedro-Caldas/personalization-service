@@ -4,7 +4,7 @@ A API carrega no startup o artefato pre-computado pelo job de batch e serve
 recomendacoes com um lookup O(1) -- nunca carrega o modelo nem importa o
 pipeline em tempo de request. Expoe:
 
-- ``GET /health``               -- 503 ate o artefato carregar, 200 depois.
+- ``GET /health``               -- 200 se o artefato esta carregado; 503 se nao (falha de carga).
 - ``GET /recommendations/{id}`` -- ranking personalizado ou fallback de cold start.
 - ``GET /metrics``              -- metricas no formato Prometheus.
 """
@@ -83,10 +83,10 @@ app = FastAPI(
 
 @app.get("/health", response_model=HealthResponse)
 def health(response: Response) -> HealthResponse:
-    """Prontidao do servico: 503 ate o artefato carregar, 200 depois.
+    """Prontidao do servico: 200 se o artefato esta carregado, 503 se nao.
 
-    Semantica de status HTTP para que qualquer load balancer (com ou sem
-    Kubernetes) saiba nao rotear trafego durante o startup.
+    A carga ocorre no lifespan, antes de a API aceitar requests; o 503
+    sinaliza falha de carga (artefato ausente/corrompido).
     """
     artifact = app.state.artifact
     if artifact is None:
