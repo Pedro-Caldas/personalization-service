@@ -3,6 +3,13 @@
 Microserviço HTTP que serve recomendações de produtos personalizadas por usuário,
 a partir de um modelo de propensão de compra já treinado (`sklearn.LogisticRegression`).
 
+> **Nota sobre o uso de IA.** Desenvolvi este projeto com apoio de IA (Claude) como
+> ferramenta, inclusive na redação deste documento. A condução foi minha: as decisões
+> de arquitetura e os trade-offs — separação batch/serving, definição de
+> `user_affinity_match`, estratégia de cold start, contrato de ranking — partiram de
+> mim, e revisei cada escolha e validei o serviço rodando de ponta a ponta (execução
+> local, testes e Docker).
+
 ## Visão geral da arquitetura
 
 O sistema é dividido em duas responsabilidades independentes:
@@ -47,10 +54,8 @@ python -m uvicorn app.main:app --reload   # http://localhost:8000
 
 - Documentação interativa (OpenAPI): `http://localhost:8000/docs`
 - O caminho do artefato é configurável via variável de ambiente `ARTIFACT_PATH`.
-- Os comandos usam a forma `python -m <ferramenta>` (em vez de `uvicorn`/`pytest`
-  diretos) de propósito: ela garante que a ferramenta rode no interpretador da
-  venv ativa, evitando que um executável de mesmo nome no `PATH` (ex.: shims de
-  pyenv/asdf) seja escolhido e acabe usando outra versão de Python/dependências.
+- Os comandos usam `python -m <ferramenta>` para garantir que ela rode no
+  interpretador da venv ativa (evita conflito com executáveis de mesmo nome no `PATH`).
 
 ### Docker
 
@@ -62,8 +67,7 @@ docker run -p 8000:8000 personalization-service
 O container roda o job de batch no startup (materializa o artefato) e só então
 sobe a API. Durante essa janela a porta ainda não aceita conexões; assim que a
 API sobe com o artefato já carregado, `/health` responde `200`. Se o artefato
-falhar ao carregar, `/health` responde `503` e o load balancer para de rotear
-tráfego (ver "Health check" abaixo).
+falhar ao carregar, `/health` responde `503` (ver "Health check" abaixo).
 
 ### Testes
 
