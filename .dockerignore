@@ -1,0 +1,18 @@
+# Reduz o contexto de build e evita copiar artefatos locais para a imagem.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Artefato e gerado no startup do container, nao copiado do host.
+artifacts/
+
+# Nao sao necessarios em runtime.
+tests/
+*.md
+.git/
+.gitignore
+.DS_Store
+.idea/
+.vscode/
