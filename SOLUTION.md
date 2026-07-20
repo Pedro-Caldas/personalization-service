@@ -3,6 +3,13 @@
 Microserviço HTTP que serve recomendações de produtos personalizadas por usuário,
 a partir de um modelo de propensão de compra já treinado (`sklearn.LogisticRegression`).
 
+> **Nota sobre o uso de IA.** Desenvolvi este projeto com apoio de IA (Claude) como
+> ferramenta, inclusive na redação deste documento. A condução foi minha: as decisões
+> de arquitetura e os trade-offs — separação batch/serving, definição de
+> `user_affinity_match`, estratégia de cold start, contrato de ranking — partiram de
+> mim, e revisei cada escolha e validei o serviço rodando de ponta a ponta (execução
+> local, testes e Docker).
+
 ## Visão geral da arquitetura
 
 O sistema é dividido em duas responsabilidades independentes:
@@ -42,11 +49,13 @@ pip install -r requirements.txt
 python -m scripts.prepare_features        # escreve artifacts/features_artifact.json
 
 # 2. Sobe a API
-uvicorn app.main:app --reload             # http://localhost:8000
+python -m uvicorn app.main:app --reload   # http://localhost:8000
 ```
 
 - Documentação interativa (OpenAPI): `http://localhost:8000/docs`
 - O caminho do artefato é configurável via variável de ambiente `ARTIFACT_PATH`.
+- Os comandos usam `python -m <ferramenta>` para garantir que ela rode no
+  interpretador da venv ativa (evita conflito com executáveis de mesmo nome no `PATH`).
 
 ### Docker
 
@@ -56,21 +65,23 @@ docker run -p 8000:8000 personalization-service
 ```
 
 O container roda o job de batch no startup (materializa o artefato) e só então
-sobe a API — enquanto o artefato carrega, `/health` responde `503`.
+sobe a API. Durante essa janela a porta ainda não aceita conexões; assim que a
+API sobe com o artefato já carregado, `/health` responde `200`. Se o artefato
+falhar ao carregar, `/health` responde `503` (ver "Health check" abaixo).
 
 ### Testes
 
 ```bash
-pytest                    # suíte completa (unitários + integração)
-pytest tests/unit         # só unitários
-pytest tests/integration  # só integração (roda o pipeline real)
+python -m pytest                    # suíte completa (unitários + integração)
+python -m pytest tests/unit         # só unitários
+python -m pytest tests/integration  # só integração (roda o pipeline real)
 ```
 
 ## Endpoints
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/health` | Prontidão: `503` até o artefato carregar, `200` depois. |
+| `GET` | `/health` | Prontidão: `200` com o artefato carregado; `503` se não carregou (falha de carga). |
 | `GET` | `/recommendations/{user_id}` | Ranking personalizado (ou fallback de cold start). Aceita `?limit=` (default 10, teto 50). |
 | `GET` | `/metrics` | Métricas no formato Prometheus. |
 | `GET` | `/docs` | Documentação OpenAPI automática. |
@@ -151,10 +162,12 @@ explicar do que dois sistemas de ranking coexistindo.
 
 ### Health check com status HTTP semântico
 
-Um único `GET /health` que retorna `503` durante o startup (enquanto o artefato
-carrega ou se ele falhou ao carregar) e `200` quando pronto. Qualquer load
-balancer — com ou sem Kubernetes — sabe interpretar `503` como "não roteie tráfego
-ainda", sem precisar de endpoints com nomenclatura específica de orquestrador.
+Um único `GET /health` que retorna `200` quando o artefato está carregado e `503`
+quando não está. A carga acontece no `lifespan`, **antes** de a API começar a
+aceitar requests — então, no caminho normal, o `503` não é uma janela transitória
+de startup (nesse intervalo a porta sequer aceita conexões): ele sinaliza que a
+carga do artefato **falhou** (arquivo ausente/corrompido) e o serviço está
+degradado.
 
 ### Artefato em JSON, não pickle
 

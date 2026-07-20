@@ -11,6 +11,9 @@ __pycache__/
 # Generated batch artifact (produced by scripts/prepare_features.py — not versioned)
 artifacts/
 
+# Internal design/planning notes (not part of the deliverable)
+PLANNING.md
+
 # OS / editor
 .DS_Store
 .idea/

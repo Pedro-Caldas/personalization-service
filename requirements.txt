@@ -1,7 +1,7 @@
 # --- Pipeline / batch scoring (scripts/prepare_features.py) ---
 # scikit-learn PINNED to the exact version model.pkl was serialized with.
 # Loading the artifact with a different version raises InconsistentVersionWarning
-# and risks invalid results (see PLANNING.md section 7). Only the batch job needs this.
+# and risks invalid results. Only the batch job needs this.
 scikit-learn==1.8.0
 pandas==2.3.3
 
